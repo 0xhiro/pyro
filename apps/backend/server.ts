@@ -1,13 +1,16 @@
 import express from 'express';
 import cors from 'cors';
 import creatorsRoute from './routes/creators';
+import leaderboardRoute from './routes/leaderboard';
 
 const app = express();
 const PORT = 3001;
 
 app.use(cors());
 app.use(express.json());
+
 app.use('/creators', creatorsRoute);
+app.use('/leaderboard', leaderboardRoute);
 
 app.get('/ping', (_req, res) => {
   res.send('pong');

@@ -6,7 +6,11 @@ type Creator = {
   tokenMint: string;
 };
 
-export default function CreatorList() {
+type Props = {
+  onSelect: (id: string) => void;
+};
+
+export default function CreatorList({ onSelect }: Props) {
   const [creators, setCreators] = useState<Creator[]>([]);
 
   useEffect(() => {
@@ -19,7 +23,11 @@ export default function CreatorList() {
     <div>
       <h2>Creators</h2>
       {creators.map((creator) => (
-        <div key={creator.id} onClick={() => console.log(`Clicked: ${creator.id}`)} style={{ marginBottom: '10px' }}>
+        <div
+          key={creator.id}
+          onClick={() => onSelect(creator.id)}
+          style={{ cursor: 'pointer', marginBottom: '10px' }}
+        >
           <strong>{creator.name}</strong><br />
           <small>{creator.tokenMint}</small>
         </div>
