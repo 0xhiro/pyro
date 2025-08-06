@@ -52,7 +52,7 @@ export default function BurnPanel({ creatorId }: Props) {
       <div>
         <input
           type="number"
-          placeholder="Amount in SOL"
+          placeholder="Amount to Burn"
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
           required
