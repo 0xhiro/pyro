@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
-import { PublicKey, Connection, clusterApiUrl } from '@solana/web3.js';
+import { PublicKey, Connection } from '@solana/web3.js';
+import { TokenListProvider } from '@solana/spl-token-registry';
 
-const SOLANA_RPC = clusterApiUrl('mainnet-beta');
-const connection = new Connection('https://mainnet.helius-rpc.com/?api-key=e52b7e28-596b-48c2-abaa-10f5dd653e72');
+const connection = new Connection(
+  'https://mainnet.helius-rpc.com/?api-key=e52b7e28-596b-48c2-abaa-10f5dd653e72'
+);
 
 export type Creator = {
   id: string;
@@ -30,14 +32,35 @@ export default function CreatorList({ onSelect }: Props) {
     try {
       setLoading(true);
       setError(null);
+
       const pubkey = new PublicKey(mintInput);
-      const info = await connection.getParsedAccountInfo(pubkey);
-      const name = (info.value?.data as any)?.parsed?.info?.name || 'Custom Token';
+      let name = 'Custom Token';
+      let symbol = '';
+
+      // Look up in the on-chain token registry
+      try {
+        const provider = new TokenListProvider();
+        const container = await provider.resolve();
+        const tokenList = container
+          .filterByChainId(101) // 101 == mainnet-beta
+          .getList();
+        const info = tokenList.find((t) => t.address === pubkey.toBase58());
+        if (info) {
+          name = info.name;
+          symbol = info.symbol;
+        }
+      } catch (registryErr) {
+        console.warn('Token registry lookup failed, falling back to default', registryErr);
+      }
+
+      const displayName = symbol ? `${name} (${symbol})` : name;
+
       const newCreator: Creator = {
         id: pubkey.toBase58(),
-        name,
+        name: displayName,
         tokenMint: pubkey.toBase58(),
       };
+
       setCreators((prev) => [...prev, newCreator]);
       setMintInput('');
     } catch (err: any) {
