@@ -1,3 +1,5 @@
+// index.tsx
+
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
@@ -17,7 +19,12 @@ import {
 
 import '@solana/wallet-adapter-react-ui/styles.css';
 
-const endpoint = 'https://api.mainnet-beta.solana.com'; // or devnet if testing
+import { Buffer } from 'buffer'; // 👈 keep this here
+if (!window.Buffer) {
+  window.Buffer = Buffer;
+}
+
+const endpoint = 'https://mainnet.helius-rpc.com/?api-key=e52b7e28-596b-48c2-abaa-10f5dd653e72';
 const wallets = [new PhantomWalletAdapter()];
 
 const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement);
