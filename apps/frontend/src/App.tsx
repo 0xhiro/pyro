@@ -40,7 +40,7 @@ function App() {
         </div>
       )}
 
-      <CreatorList onSelect={setSelectedCreatorId} />
+      <CreatorList onSelect={(creator) => setSelectedCreatorId(creator.id)} />
 
       {selectedCreatorId && (
         <>
