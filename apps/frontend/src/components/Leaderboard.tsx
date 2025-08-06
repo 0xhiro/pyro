@@ -33,7 +33,7 @@ export default function Leaderboard({ creatorId }: Props) {
       <ul>
         {entries.map((entry, i) => (
           <li key={i}>
-            <strong>{entry.wallet}</strong>: {entry.totalBurned} SOL
+            <strong>{entry.wallet}</strong>: {entry.totalBurned} 
           </li>
         ))}
       </ul>

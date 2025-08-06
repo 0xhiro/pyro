@@ -1,10 +1,8 @@
-import { useEffect, useState } from 'react';
-import { PublicKey, Connection } from '@solana/web3.js';
+import React, { useEffect, useState } from 'react';
+import { PublicKey } from '@solana/web3.js';
 import { TokenListProvider } from '@solana/spl-token-registry';
 
-const connection = new Connection(
-  'https://mainnet.helius-rpc.com/?api-key=e52b7e28-596b-48c2-abaa-10f5dd653e72'
-);
+const RPC_ENDPOINT = 'https://mainnet.helius-rpc.com/?api-key=e52b7e28-596b-48c2-abaa-10f5dd653e72';
 
 export type Creator = {
   id: string;
@@ -22,37 +20,28 @@ export default function CreatorList({ onSelect }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // load existing creators
   useEffect(() => {
     fetch('http://localhost:3001/creators')
       .then((res) => res.json())
-      .then((data) => setCreators(data));
+      .then((data: Creator[]) => setCreators(data))
+      .catch((err) => console.error('Failed to fetch creators:', err));
   }, []);
 
   const handleAddToken = async () => {
+    setLoading(true);
+    setError(null);
     try {
-      setLoading(true);
-      setError(null);
+      const pubkey = new PublicKey(mintInput.trim());
 
-      const pubkey = new PublicKey(mintInput);
-      let name = 'Custom Token';
-      let symbol = '';
+      // lookup in the on-chain token registry
+      const provider = new TokenListProvider();
+      const container = await provider.resolve();
+      const tokenList = container.filterByChainId(101).getList();
+      const info = tokenList.find((t) => t.address === pubkey.toBase58());
 
-      // Look up in the on-chain token registry
-      try {
-        const provider = new TokenListProvider();
-        const container = await provider.resolve();
-        const tokenList = container
-          .filterByChainId(101) // 101 == mainnet-beta
-          .getList();
-        const info = tokenList.find((t) => t.address === pubkey.toBase58());
-        if (info) {
-          name = info.name;
-          symbol = info.symbol;
-        }
-      } catch (registryErr) {
-        console.warn('Token registry lookup failed, falling back to default', registryErr);
-      }
-
+      const name = info ? info.name : 'Custom Token';
+      const symbol = info ? info.symbol : '';
       const displayName = symbol ? `${name} (${symbol})` : name;
 
       const newCreator: Creator = {
@@ -61,11 +50,20 @@ export default function CreatorList({ onSelect }: Props) {
         tokenMint: pubkey.toBase58(),
       };
 
+      // persist to backend
+      const res = await fetch('http://localhost:3001/creators', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newCreator),
+      });
+      if (!res.ok) throw new Error('Failed to save creator');
+
+      // append locally
       setCreators((prev) => [...prev, newCreator]);
       setMintInput('');
     } catch (err: any) {
-      console.error('Invalid token mint:', err);
-      setError('Invalid token mint or unable to fetch.');
+      console.error('Invalid token mint or save failed:', err);
+      setError('Invalid token mint or save failed.');
     } finally {
       setLoading(false);
     }
@@ -74,9 +72,10 @@ export default function CreatorList({ onSelect }: Props) {
   return (
     <div>
       <h2>Creators</h2>
+
       {creators.map((creator) => (
         <div
-          key={creator.id}
+          key={creator.id}                        // ← Unique key prop!
           onClick={() => onSelect(creator)}
           style={{ cursor: 'pointer', marginBottom: '10px' }}
         >

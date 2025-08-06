@@ -23,7 +23,7 @@ function App() {
         .then(setBalance)
         .catch(err => console.error('Error fetching token balance:', err));
     }
-  }, [publicKey]);
+  }, [publicKey, connection]);
 
   return (
     <div>
@@ -35,8 +35,7 @@ function App() {
 
       {publicKey && (
         <div style={{ marginBottom: '1rem' }}>
-          <strong>Wallet:</strong> {publicKey.toBase58()}<br />
-          <strong>Token balance:</strong> {balance ?? 'Loading...'}
+          <strong>Wallet:</strong> {publicKey.toBase58()}
         </div>
       )}
 
