@@ -1,28 +1,39 @@
 import { Router } from 'express';
+import { connectToDatabase } from '../lib/mongo';
+
 const router = Router();
 
-// Dummy leaderboard data
-const sampleLeaderboards = {
-  'spinning-cat': [
-    { wallet: 'So1anaUser123', totalBurned: 12.5 },
-    { wallet: 'BurnLord420', totalBurned: 8.1 },
-    { wallet: 'MeowGuy', totalBurned: 3.3 },
-  ],
-  'hello-kitty': [
-    { wallet: 'KittyMaxi', totalBurned: 22.9 },
-    { wallet: 'PastelDump', totalBurned: 10.4 },
-  ],
-};
-
-router.get('/:creatorId', (req, res) => {
+router.get('/:creatorId', async (req, res) => {
   const { creatorId } = req.params;
-  const data = sampleLeaderboards[creatorId];
 
-  if (!data) {
-    return res.status(404).json({ error: 'Creator not found' });
+  try {
+    const db = await connectToDatabase();
+    const burns = db.collection('burns');
+
+    const leaderboard = await burns.aggregate([
+      { $match: { creatorId } },
+      {
+        $group: {
+          _id: '$wallet',
+          totalBurned: { $sum: '$amount' },
+        },
+      },
+      {
+        $project: {
+          wallet: '$_id',
+          totalBurned: 1,
+          _id: 0,
+        },
+      },
+      { $sort: { totalBurned: -1 } },
+      { $limit: 10 },
+    ]).toArray();
+
+    res.status(200).json(leaderboard);
+  } catch (err) {
+    console.error('Failed to load leaderboard:', err);
+    res.status(500).json({ error: 'Failed to load leaderboard' });
   }
-
-  res.json(data);
 });
 
 export default router;

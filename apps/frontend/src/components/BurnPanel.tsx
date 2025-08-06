@@ -10,12 +10,30 @@ export default function BurnPanel({ creatorId }: Props) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('🔥 Dummy burn submitted:');
-    console.log(`Creator: ${creatorId}`);
-    console.log(`Wallet: ${wallet}`);
-    console.log(`Amount: ${amount} SOL`);
-    setWallet('');
-    setAmount('');
+
+    fetch('http://localhost:3001/burns', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        creatorId,
+        wallet,
+        amount: parseFloat(amount),
+      }),
+    })
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error('Failed to submit burn');
+        }
+        return res.json();
+      })
+      .then((data) => {
+        console.log('✅ Burn submitted:', data);
+        setWallet('');
+        setAmount('');
+      })
+      .catch((err) => {
+        console.error('❌ Burn failed:', err);
+      });
   };
 
   return (
@@ -45,3 +63,4 @@ export default function BurnPanel({ creatorId }: Props) {
     </form>
   );
 }
+
