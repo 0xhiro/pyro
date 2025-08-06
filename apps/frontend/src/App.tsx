@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import CreatorList from './components/CreatorList';
 import Leaderboard from './components/Leaderboard';
+import BurnPanel from './components/BurnPanel';
 
 function App() {
   const [selectedCreator, setSelectedCreator] = useState<string | null>(null);
@@ -13,6 +14,7 @@ function App() {
         <>
           <hr />
           <Leaderboard creatorId={selectedCreator} />
+          <BurnPanel creatorId={selectedCreator} />
         </>
       )}
     </div>
