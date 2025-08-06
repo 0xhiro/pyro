@@ -45,11 +45,22 @@ export default function BurnPanel({ creatorId }: Props) {
       const tx = new Transaction().add(burnIx);
       const sig = await sendTransaction(tx, connection);
 
-      setStatus(`Sent! Tx: ${sig}`);
+      // ✅ Log burn to backend
+      await fetch('http://localhost:3001/burns', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          creatorId,
+          wallet: publicKey.toBase58(),
+          amount: Number(amount),
+        }),
+      });
+
+      setStatus(`✅ Sent! Tx: ${sig}`);
       setAmount('');
     } catch (err: any) {
       console.error('Burn error:', err);
-      setStatus(`Error: ${err.message}`);
+      setStatus(`❌ Error: ${err.message}`);
     }
   };
 
