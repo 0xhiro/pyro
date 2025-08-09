@@ -25,6 +25,10 @@ function App() {
     }
   }, [publicKey, connection]);
 
+  const overlayUrl = selectedCreatorId
+    ? `${window.location.origin}/overlay?creatorId=${encodeURIComponent(selectedCreatorId)}`
+    : '';
+
   return (
     <div>
       <h1>Pyro Demo</h1>
@@ -43,6 +47,28 @@ function App() {
 
       {selectedCreatorId && (
         <>
+          {/* Overlay URL block */}
+          <div style={{ margin: '10px 0' }}>
+            <div style={{ fontSize: 12, opacity: 0.8, marginBottom: 4 }}>
+              Overlay URL (copy into OBS/Restream):
+            </div>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <input
+                readOnly
+                value={overlayUrl}
+                style={{ width: '100%', maxWidth: 520 }}
+                onFocus={(e) => e.currentTarget.select()}
+              />
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(overlayUrl);
+                }}
+              >
+                Copy
+              </button>
+            </div>
+          </div>
+
           <Leaderboard creatorId={selectedCreatorId} />
           <BurnPanel creatorId={selectedCreatorId} />
         </>

@@ -5,6 +5,7 @@ const router = Router();
 
 router.get('/:creatorId', async (req, res) => {
   const { creatorId } = req.params;
+  const limit = parseInt(req.query.limit as string, 10) || 10;
 
   try {
     const db = await connectToDatabase();
@@ -26,10 +27,16 @@ router.get('/:creatorId', async (req, res) => {
         },
       },
       { $sort: { totalBurned: -1 } },
-      { $limit: 10 },
+      { $limit: limit },
     ]).toArray();
 
-    res.status(200).json(leaderboard);
+    // Add rank numbers
+    const ranked = leaderboard.map((entry, idx) => ({
+      rank: idx + 1,
+      ...entry,
+    }));
+
+    res.status(200).json(ranked);
   } catch (err) {
     console.error('Failed to load leaderboard:', err);
     res.status(500).json({ error: 'Failed to load leaderboard' });
