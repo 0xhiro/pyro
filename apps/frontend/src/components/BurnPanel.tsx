@@ -4,85 +4,83 @@ import { PublicKey, Transaction } from '@solana/web3.js';
 import {
   getAssociatedTokenAddress,
   createBurnInstruction,
+  getMint,
 } from '@solana/spl-token';
 
 type Props = {
-  creatorId: string;
+  creatorMint: string; // base58 mint
 };
 
-export default function BurnPanel({ creatorId }: Props) {
-  const [amount, setAmount] = useState('');
+const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:3001';
+
+export default function BurnPanel({ creatorMint }: Props) {
+  const [amountUi, setAmountUi] = useState('');
   const [status, setStatus] = useState<string | null>(null);
   const { publicKey, sendTransaction } = useWallet();
   const { connection } = useConnection();
-
-  // TEMP: hardcoded token mint for demo
-  const tokenMint = new PublicKey('45zyjKJ7Aqu8iofWEm5GuSAkY7eJ3sLMAbPeY96Apump');
 
   const handleBurn = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!publicKey) return;
 
-    setStatus('Preparing burn...');
-
     try {
-      const ata = await getAssociatedTokenAddress(tokenMint, publicKey);
+      setStatus('Preparing burn...');
+      const mintPk = new PublicKey(creatorMint);
 
-      // Dynamically fetch token decimals
-      const mintInfo = await connection.getParsedAccountInfo(tokenMint);
-      const decimals =
-        (mintInfo.value?.data as any)?.parsed?.info?.decimals ?? 0;
+      // decimals
+      const mintInfo = await getMint(connection, mintPk);
+      const decimals = mintInfo.decimals;
 
-      const burnAmount = Number(amount) * 10 ** decimals;
+      const ui = Number(amountUi);
+      if (!Number.isFinite(ui) || ui <= 0) {
+        setStatus('Enter a valid amount > 0');
+        return;
+      }
+      const baseUnits = BigInt(Math.floor(ui * 10 ** decimals));
 
-      const burnIx = createBurnInstruction(
-        ata,
-        tokenMint,
-        publicKey,
-        burnAmount
-      );
+      // ATA + burn ix
+      const ata = await getAssociatedTokenAddress(mintPk, publicKey);
+      const ix = createBurnInstruction(ata, mintPk, publicKey, baseUnits);
 
-      const tx = new Transaction().add(burnIx);
-      const sig = await sendTransaction(tx, connection);
+      const tx = new Transaction().add(ix);
+      const sig = await sendTransaction(tx, connection, { skipPreflight: false });
 
-      // ✅ Log burn to backend
-      await fetch('http://localhost:3001/burns', {
+      // Log to backend
+      await fetch(`${API_BASE}/burns`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          creatorId,
+          creatorMint,
           wallet: publicKey.toBase58(),
-          amount: Number(amount),
+          amount: ui, // Decimal128/txSig verification will come in Patch 2
         }),
       });
 
-      setStatus(`✅ Sent! Tx: ${sig}`);
-      setAmount('');
+      setStatus(`Sent: ${sig}`);
+      setAmountUi('');
     } catch (err: any) {
       console.error('Burn error:', err);
-      setStatus(`❌ Error: ${err.message}`);
+      setStatus(`Error: ${err.message ?? String(err)}`);
     }
   };
 
   return (
     <form onSubmit={handleBurn} style={{ marginTop: '1rem' }}>
       <h4>Burn Creator Token</h4>
-
       <div>
         <input
           type="number"
+          step="any"
           placeholder="Amount to burn"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
+          value={amountUi}
+          onChange={(e) => setAmountUi(e.target.value)}
           required
           style={{ width: '150px', marginBottom: '0.5rem' }}
         />
       </div>
-
       <button type="submit" disabled={!publicKey}>
         Burn from Connected Wallet
       </button>
-
       {status && <p>{status}</p>}
     </form>
   );

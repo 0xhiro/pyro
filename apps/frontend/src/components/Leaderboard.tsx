@@ -1,29 +1,30 @@
 import { useEffect, useState } from 'react';
 
 type LeaderboardEntry = {
+  rank?: number;
   wallet: string;
   totalBurned: number;
 };
 
 type Props = {
-  creatorId: string;
+  creatorMint: string;
 };
 
-export default function Leaderboard({ creatorId }: Props) {
+const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:3001';
+
+export default function Leaderboard({ creatorMint }: Props) {
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch(`http://localhost:3001/leaderboard/${creatorId}`)
+    fetch(`${API_BASE}/leaderboard/${creatorMint}`)
       .then(res => {
-        if (!res.ok) {
-          throw new Error('Failed to fetch leaderboard');
-        }
+        if (!res.ok) throw new Error('Failed to fetch leaderboard');
         return res.json();
       })
       .then(data => setEntries(data))
       .catch(err => setError(err.message));
-  }, [creatorId]);
+  }, [creatorMint]);
 
   if (error) return <p>Error: {error}</p>;
 
@@ -32,8 +33,8 @@ export default function Leaderboard({ creatorId }: Props) {
       <h3>Leaderboard</h3>
       <ul>
         {entries.map((entry, i) => (
-          <li key={i}>
-            <strong>{entry.wallet}</strong>: {entry.totalBurned} 
+          <li key={entry.wallet}>
+            #{entry.rank ?? i + 1} <strong>{entry.wallet}</strong>: {entry.totalBurned}
           </li>
         ))}
       </ul>

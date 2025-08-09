@@ -3,17 +3,17 @@ import BannerOverlay from './components/BannerOverlay';
 
 export default function Overlay() {
   const params = new URLSearchParams(window.location.search);
-  const creatorId = params.get('creatorId') || '';
+  // accept both for transition, prefer creatorMint
+  const creatorMint = params.get('creatorMint') || params.get('creatorId') || '';
 
-  if (!creatorId) {
+  if (!creatorMint) {
     return (
       <div style={{ color: '#fff', background: 'transparent', fontFamily: 'Inter, system-ui, sans-serif' }}>
-        Missing <code>creatorId</code> query param.
+        Missing <code>creatorMint</code> query param.
       </div>
     );
   }
 
-  // Make page background transparent-friendly for OBS.
   return (
     <div
       style={{
@@ -24,7 +24,7 @@ export default function Overlay() {
         placeItems: 'center',
       }}
     >
-      <BannerOverlay creatorId={creatorId} />
+      <BannerOverlay creatorId={creatorMint} /> {/** BannerOverlay still uses prop "creatorId" internally; fine for now */}
     </div>
   );
 }

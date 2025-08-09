@@ -2,12 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { PublicKey } from '@solana/web3.js';
 import { TokenListProvider } from '@solana/spl-token-registry';
 
-const RPC_ENDPOINT = 'https://mainnet.helius-rpc.com/?api-key=e52b7e28-596b-48c2-abaa-10f5dd653e72';
+const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:3001';
 
 export type Creator = {
-  id: string;
+  mint: string;   // <- normalized
   name: string;
-  tokenMint: string;
 };
 
 type Props = {
@@ -20,11 +19,17 @@ export default function CreatorList({ onSelect }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // load existing creators
   useEffect(() => {
-    fetch('http://localhost:3001/creators')
+    fetch(`${API_BASE}/creators`)
       .then((res) => res.json())
-      .then((data: Creator[]) => setCreators(data))
+      .then((data) => {
+        // Map server docs to { mint, name }
+        const mapped = (data || []).map((c: any) => ({
+          mint: c._id || c.mint || c.tokenMint || c.id,
+          name: c.name,
+        }));
+        setCreators(mapped);
+      })
       .catch((err) => console.error('Failed to fetch creators:', err));
   }, []);
 
@@ -34,7 +39,6 @@ export default function CreatorList({ onSelect }: Props) {
     try {
       const pubkey = new PublicKey(mintInput.trim());
 
-      // lookup in the on-chain token registry
       const provider = new TokenListProvider();
       const container = await provider.resolve();
       const tokenList = container.filterByChainId(101).getList();
@@ -45,20 +49,17 @@ export default function CreatorList({ onSelect }: Props) {
       const displayName = symbol ? `${name} (${symbol})` : name;
 
       const newCreator: Creator = {
-        id: pubkey.toBase58(),
+        mint: pubkey.toBase58(),
         name: displayName,
-        tokenMint: pubkey.toBase58(),
       };
 
-      // persist to backend
-      const res = await fetch('http://localhost:3001/creators', {
+      const res = await fetch(`${API_BASE}/creators`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newCreator),
+        body: JSON.stringify({ mint: newCreator.mint, name: newCreator.name }),
       });
       if (!res.ok) throw new Error('Failed to save creator');
 
-      // append locally
       setCreators((prev) => [...prev, newCreator]);
       setMintInput('');
     } catch (err: any) {
@@ -75,13 +76,13 @@ export default function CreatorList({ onSelect }: Props) {
 
       {creators.map((creator) => (
         <div
-          key={creator.id}                        // ← Unique key prop!
+          key={creator.mint}
           onClick={() => onSelect(creator)}
           style={{ cursor: 'pointer', marginBottom: '10px' }}
         >
           <strong>{creator.name}</strong>
           <br />
-          <small>{creator.tokenMint}</small>
+          <small>{creator.mint}</small>
         </div>
       ))}
 

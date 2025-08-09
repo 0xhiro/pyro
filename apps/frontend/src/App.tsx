@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import CreatorList from './components/CreatorList';
+import CreatorList, { Creator } from './components/CreatorList';
 import Leaderboard from './components/Leaderboard';
 import BurnPanel from './components/BurnPanel';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
@@ -8,25 +8,25 @@ import { getTokenBalance } from './utils/getTokenBalance';
 import { PublicKey } from '@solana/web3.js';
 
 function App() {
-  const [selectedCreatorId, setSelectedCreatorId] = useState<string | null>(null);
+  const [selectedCreator, setSelectedCreator] = useState<Creator | null>(null);
   const [balance, setBalance] = useState<number | null>(null);
 
   const { publicKey } = useWallet();
   const { connection } = useConnection();
 
-  // TEMP: hardcoded token mint for demo
-  const tokenMint = new PublicKey('45zyjKJ7Aqu8iofWEm5GuSAkY7eJ3sLMAbPeY96Apump');
-
   useEffect(() => {
-    if (publicKey) {
-      getTokenBalance(connection, publicKey, tokenMint)
+    const mint = selectedCreator?.mint;
+    if (publicKey && mint) {
+      getTokenBalance(connection, publicKey, new PublicKey(mint))
         .then(setBalance)
         .catch(err => console.error('Error fetching token balance:', err));
+    } else {
+      setBalance(null);
     }
-  }, [publicKey, connection]);
+  }, [publicKey, connection, selectedCreator?.mint]);
 
-  const overlayUrl = selectedCreatorId
-    ? `${window.location.origin}/overlay?creatorId=${encodeURIComponent(selectedCreatorId)}`
+  const overlayUrl = selectedCreator
+    ? `${window.location.origin}/overlay?creatorMint=${encodeURIComponent(selectedCreator.mint)}`
     : '';
 
   return (
@@ -43,11 +43,10 @@ function App() {
         </div>
       )}
 
-      <CreatorList onSelect={(creator) => setSelectedCreatorId(creator.id)} />
+      <CreatorList onSelect={setSelectedCreator} />
 
-      {selectedCreatorId && (
+      {selectedCreator && (
         <>
-          {/* Overlay URL block */}
           <div style={{ margin: '10px 0' }}>
             <div style={{ fontSize: 12, opacity: 0.8, marginBottom: 4 }}>
               Overlay URL (copy into OBS/Restream):
@@ -59,18 +58,19 @@ function App() {
                 style={{ width: '100%', maxWidth: 520 }}
                 onFocus={(e) => e.currentTarget.select()}
               />
-              <button
-                onClick={() => {
-                  navigator.clipboard.writeText(overlayUrl);
-                }}
-              >
-                Copy
-              </button>
+              <button onClick={() => navigator.clipboard.writeText(overlayUrl)}>Copy</button>
             </div>
           </div>
 
-          <Leaderboard creatorId={selectedCreatorId} />
-          <BurnPanel creatorId={selectedCreatorId} />
+          {/* Optional: show user balance for selected creator */}
+          {balance !== null && (
+            <div style={{ marginBottom: '0.5rem' }}>
+              Balance: {balance}
+            </div>
+          )}
+
+          <Leaderboard creatorMint={selectedCreator.mint} />
+          <BurnPanel creatorMint={selectedCreator.mint} />
         </>
       )}
     </div>
