@@ -2,9 +2,12 @@ import React, { useEffect, useState } from 'react';
 import CreatorList, { Creator } from './components/CreatorList';
 import Leaderboard from './components/Leaderboard';
 import BurnPanel from './components/BurnPanel';
+import TestBurnPanel from './components/TestBurnPanel';
+import SessionManager from './components/SessionManager';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { getTokenBalance } from './utils/getTokenBalance';
+import { useSession } from './hooks/useSession';
 import { PublicKey } from '@solana/web3.js';
 
 function App() {
@@ -13,6 +16,7 @@ function App() {
 
   const { publicKey } = useWallet();
   const { connection } = useConnection();
+  const { session } = useSession(selectedCreator?.mint || '');
 
   useEffect(() => {
     const mint = selectedCreator?.mint;
@@ -47,6 +51,31 @@ function App() {
 
       {selectedCreator && (
         <>
+          <div style={{ 
+            border: '2px solid #0ea5e9', 
+            padding: '1rem', 
+            margin: '1rem 0',
+            backgroundColor: '#f0f9ff',
+            borderRadius: '8px'
+          }}>
+            <h2>🎯 Selected Creator: {selectedCreator.name}</h2>
+            <div style={{ fontFamily: 'monospace', fontSize: '0.9em', marginBottom: '0.5rem' }}>
+              {selectedCreator.mint}
+            </div>
+            <div style={{ 
+              color: selectedCreator.isLive ? '#059669' : '#dc2626',
+              fontWeight: 'bold',
+              fontSize: '1.1em'
+            }}>
+              {selectedCreator.isLive ? ' LIVE' : ' OFFLINE'}
+            </div>
+          </div>
+
+          <SessionManager 
+            creatorMint={selectedCreator.mint} 
+            creatorName={selectedCreator.name}
+          />
+
           <div style={{ margin: '10px 0' }}>
             <div style={{ fontSize: 12, opacity: 0.8, marginBottom: 4 }}>
               Overlay URL (copy into OBS/Restream):
@@ -65,12 +94,28 @@ function App() {
           {/* Optional: show user balance for selected creator */}
           {balance !== null && (
             <div style={{ marginBottom: '0.5rem' }}>
-              Balance: {balance}
+              Token Balance: {balance}
             </div>
           )}
 
-          <Leaderboard creatorMint={selectedCreator.mint} />
-          <BurnPanel creatorMint={selectedCreator.mint} />
+          <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
+            <div style={{ flex: '1', minWidth: '300px' }}>
+              <Leaderboard 
+                creatorMint={selectedCreator.mint} 
+                sessionId={session?._id}
+              />
+            </div>
+            <div style={{ flex: '1', minWidth: '300px' }}>
+              <TestBurnPanel 
+                creatorMint={selectedCreator.mint} 
+                sessionId={session?._id}
+              />
+              <BurnPanel 
+                creatorMint={selectedCreator.mint} 
+                sessionId={session?._id}
+              />
+            </div>
+          </div>
         </>
       )}
     </div>
