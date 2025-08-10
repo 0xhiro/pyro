@@ -19,7 +19,7 @@ export default function Leaderboard({ creatorMint, sessionId }: Props) {
 
   useEffect(() => {
     const url = sessionId 
-      ? `${API_BASE}/leaderboard/${creatorMint}/session/${sessionId}`
+      ? `${API_BASE}/leaderboard/${creatorMint}?sessionId=${sessionId}`
       : `${API_BASE}/leaderboard/${creatorMint}`;
       
     fetch(url)
@@ -27,7 +27,7 @@ export default function Leaderboard({ creatorMint, sessionId }: Props) {
         if (!res.ok) throw new Error('Failed to fetch leaderboard');
         return res.json();
       })
-      .then(data => setEntries(data))
+      .then(data => setEntries(data.leaderboard || []))
       .catch(err => setError(err.message));
   }, [creatorMint, sessionId]);
 

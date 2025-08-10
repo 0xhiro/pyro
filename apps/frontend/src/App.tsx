@@ -33,6 +33,7 @@ function App() {
     ? `${window.location.origin}/overlay?creatorMint=${encodeURIComponent(selectedCreator.mint)}`
     : '';
 
+
   return (
     <div>
       <h1>Pyro Demo</h1>
