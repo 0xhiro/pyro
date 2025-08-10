@@ -1,0 +1,101 @@
+import { ObjectId } from 'mongodb';
+import { connectToDatabase } from '../lib/mongo';
+import { CreatorDoc } from '../types';
+
+export class CreatorService {
+  private static async getCollection() {
+    const db = await connectToDatabase();
+    return db.collection<CreatorDoc>('creators');
+  }
+
+  static async getAllCreators(): Promise<CreatorDoc[]> {
+    const creators = await this.getCollection();
+    return creators.find({}).toArray();
+  }
+
+  static async getCreatorById(mint: string): Promise<CreatorDoc | null> {
+    const creators = await this.getCollection();
+    return creators.findOne({ _id: mint });
+  }
+
+  static async createCreator(creatorData: {
+    mint: string;
+    name: string;
+    iconUrl?: string;
+    decimals?: number;
+    symbol?: string;
+  }): Promise<CreatorDoc> {
+    const creators = await this.getCollection();
+    
+    const doc: CreatorDoc = {
+      _id: creatorData.mint,
+      name: creatorData.name,
+      iconUrl: creatorData.iconUrl,
+      decimals: creatorData.decimals,
+      symbol: creatorData.symbol,
+      isLive: false,
+      createdAt: new Date(),
+    };
+
+    await creators.insertOne(doc);
+    return doc;
+  }
+
+  static async updateCreatorStatus(mint: string, isLive: boolean): Promise<void> {
+    const creators = await this.getCollection();
+    const sessions = (await connectToDatabase()).collection('sessions');
+
+    const creator = await creators.findOne({ _id: mint });
+    if (!creator) {
+      throw new Error('Creator not found');
+    }
+
+    const updateDoc: Partial<CreatorDoc> = { isLive };
+
+    // If going offline, end current session
+    if (!isLive && creator.currentSessionId) {
+      await sessions.updateOne(
+        { _id: creator.currentSessionId },
+        { 
+          $set: { 
+            isActive: false, 
+            endTime: new Date() 
+          } 
+        }
+      );
+      updateDoc.currentSessionId = undefined;
+    }
+
+    await creators.updateOne(
+      { _id: mint },
+      { 
+        $set: updateDoc,
+        ...(updateDoc.currentSessionId === undefined ? { $unset: { currentSessionId: "" } } : {})
+      }
+    );
+  }
+
+  static async setCurrentSession(mint: string, sessionId: ObjectId): Promise<void> {
+    const creators = await this.getCollection();
+    await creators.updateOne(
+      { _id: mint },
+      { 
+        $set: { 
+          isLive: true,
+          currentSessionId: sessionId
+        } 
+      }
+    );
+  }
+
+  static async clearCurrentSession(mint: string): Promise<void> {
+    const creators = await this.getCollection();
+    await creators.updateOne(
+      { _id: mint },
+      { 
+        $set: { isLive: false },
+        $unset: { currentSessionId: "" }
+      }
+    );
+  }
+}
