@@ -26,8 +26,8 @@ export function useLeaderboard(creatorId: string, opts: Options & { sessionId?: 
       try {
         setError(null);
         const url = sessionId 
-          ? `${API_BASE}/leaderboard/${creatorId}?limit=${limit}&sessionId=${sessionId}`
-          : `${API_BASE}/leaderboard/${creatorId}?limit=${limit}`;
+          ? `${API_BASE}/leaderboard/${creatorId}?limit=${limit}&sessionId=${sessionId}&useBlockchain=true`
+          : `${API_BASE}/leaderboard/${creatorId}?limit=${limit}&useBlockchain=true`;
           
         const res = await fetch(url, {
           signal: abort.signal,

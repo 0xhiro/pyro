@@ -81,19 +81,20 @@ export class BlockchainLeaderboardService {
 
     if (useBlockchain) {
       try {
-        console.log('Attempting to fetch blockchain data for mint:', creatorMint);
+        console.log(`🔍 Fetching blockchain data for mint: ${creatorMint}`);
         // Fetch leaderboard data from blockchain
         leaderboardData = await this.solanaService.getLeaderboardData(creatorMint, {
           limit: limit * 2, // Get more data to account for filtering
           timeWindow
         });
         dataSource = 'blockchain';
-        console.log('Successfully fetched blockchain data:', leaderboardData.length, 'entries');
+        console.log(`✅ Blockchain data fetched: ${leaderboardData.length} entries`);
+        console.log('Raw blockchain data:', leaderboardData);
       } catch (error) {
-        console.error('Failed to fetch blockchain data, falling back to database:', error);
+        console.error('❌ Failed to fetch blockchain data, falling back to database:', error);
         // Fallback to original database-based approach
         const fallbackResult = await this.getDatabaseLeaderboard(creatorMint, { limit, sessionId });
-        return { ...fallbackResult, dataSource: 'database' };
+        return { ...fallbackResult, dataSource: 'database_fallback' };
       }
     } else {
       const result = await this.getDatabaseLeaderboard(creatorMint, { limit, sessionId });

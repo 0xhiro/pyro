@@ -19,8 +19,8 @@ export default function Leaderboard({ creatorMint, sessionId }: Props) {
 
   useEffect(() => {
     const url = sessionId 
-      ? `${API_BASE}/leaderboard/${creatorMint}?sessionId=${sessionId}`
-      : `${API_BASE}/leaderboard/${creatorMint}`;
+      ? `${API_BASE}/leaderboard/${creatorMint}?sessionId=${sessionId}&useBlockchain=true`
+      : `${API_BASE}/leaderboard/${creatorMint}?useBlockchain=true`;
       
     fetch(url)
       .then(res => {

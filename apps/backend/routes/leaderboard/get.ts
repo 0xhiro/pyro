@@ -4,15 +4,18 @@ import { LeaderboardService, BlockchainLeaderboardService } from '../../services
 const router = Router();
 
 router.get('/:creatorMint', async (req, res) => {
-  console.log('LEADERBOARD ROUTE HIT!'); // Basic test
-
-  
   const { creatorMint } = req.params;
   const { sessionId, useBlockchain } = req.query;
   const limit = parseInt(req.query.limit as string, 10) || 10;
-  const shouldUseBlockchain = useBlockchain === 'true' || useBlockchain === '1';
-  
-  console.log('Leaderboard request:', { creatorMint, sessionId, useBlockchain, shouldUseBlockchain });
+  // Default to blockchain unless explicitly disabled
+  const shouldUseBlockchain = useBlockchain !== 'false' && useBlockchain !== '0';
+
+  console.log(`🚀 Leaderboard request for ${creatorMint}:`, {
+    sessionId,
+    useBlockchain,
+    shouldUseBlockchain,
+    limit
+  });
 
   try {
     const result = await BlockchainLeaderboardService.getLeaderboard(creatorMint, {
@@ -21,7 +24,11 @@ router.get('/:creatorMint', async (req, res) => {
       useBlockchain: shouldUseBlockchain
     });
     
-    console.log('Leaderboard result data source:', result.dataSource);
+    console.log(`📊 Leaderboard result:`, {
+      dataSource: result.dataSource,
+      entryCount: result.leaderboard.length
+    });
+    
     res.status(200).json(result);
   } catch (err: any) {
     if (err.message === 'Invalid sessionId format') {
