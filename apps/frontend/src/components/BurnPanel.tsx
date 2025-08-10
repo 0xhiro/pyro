@@ -9,11 +9,12 @@ import {
 
 type Props = {
   creatorMint: string; // base58 mint
+  sessionId?: string;
 };
 
 const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:3001';
 
-export default function BurnPanel({ creatorMint }: Props) {
+export default function BurnPanel({ creatorMint, sessionId }: Props) {
   const [amountUi, setAmountUi] = useState('');
   const [status, setStatus] = useState<string | null>(null);
   const { publicKey, sendTransaction } = useWallet();
@@ -46,14 +47,20 @@ export default function BurnPanel({ creatorMint }: Props) {
       const sig = await sendTransaction(tx, connection, { skipPreflight: false });
 
       // Log to backend
+      const burnPayload: any = {
+        creatorMint,
+        wallet: publicKey.toBase58(),
+        amount: ui, // Decimal128/txSig verification will come in Patch 2
+      };
+
+      if (sessionId) {
+        burnPayload.sessionId = sessionId;
+      }
+
       await fetch(`${API_BASE}/burns`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          creatorMint,
-          wallet: publicKey.toBase58(),
-          amount: ui, // Decimal128/txSig verification will come in Patch 2
-        }),
+        body: JSON.stringify(burnPayload),
       });
 
       setStatus(`Sent: ${sig}`);

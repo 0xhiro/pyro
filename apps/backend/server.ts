@@ -1,8 +1,6 @@
 import express from 'express';
 import cors from 'cors';
-import creatorsRoute from './routes/creators';
-import leaderboardRoute from './routes/leaderboard';
-import burnsRoute from './routes/burns';
+import routes from './routes';
 import { connectToDatabase } from './lib/mongo';
 
 const app = express();
@@ -20,9 +18,7 @@ connectToDatabase()
   });
 
 // Routes
-app.use('/creators', creatorsRoute);
-app.use('/leaderboard', leaderboardRoute);
-app.use('/burns', burnsRoute);
+app.use(routes);
 
 // Health
 app.get('/ping', (_req, res) => res.send('pong'));

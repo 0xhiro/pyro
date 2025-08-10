@@ -7,6 +7,7 @@ const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:3001';
 export type Creator = {
   mint: string;   // <- normalized
   name: string;
+  isLive?: boolean;
 };
 
 type Props = {
@@ -23,10 +24,11 @@ export default function CreatorList({ onSelect }: Props) {
     fetch(`${API_BASE}/creators`)
       .then((res) => res.json())
       .then((data) => {
-        // Map server docs to { mint, name }
+        // Map server docs to { mint, name, isLive }
         const mapped = (data || []).map((c: any) => ({
           mint: c._id || c.mint || c.tokenMint || c.id,
           name: c.name,
+          isLive: c.isLive || false,
         }));
         setCreators(mapped);
       })
@@ -51,6 +53,7 @@ export default function CreatorList({ onSelect }: Props) {
       const newCreator: Creator = {
         mint: pubkey.toBase58(),
         name: displayName,
+        isLive: false,
       };
 
       const res = await fetch(`${API_BASE}/creators`, {
@@ -78,11 +81,29 @@ export default function CreatorList({ onSelect }: Props) {
         <div
           key={creator.mint}
           onClick={() => onSelect(creator)}
-          style={{ cursor: 'pointer', marginBottom: '10px' }}
+          style={{ 
+            cursor: 'pointer', 
+            marginBottom: '10px',
+            padding: '0.5rem',
+            border: '1px solid #ccc',
+            borderRadius: '4px',
+            backgroundColor: creator.isLive ? '#f0f9ff' : '#f9f9f9'
+          }}
         >
-          <strong>{creator.name}</strong>
-          <br />
-          <small>{creator.mint}</small>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <strong>{creator.name}</strong>
+              <br />
+              <small style={{ fontFamily: 'monospace' }}>{creator.mint}</small>
+            </div>
+            <div style={{ 
+              color: creator.isLive ? '#059669' : '#6b7280',
+              fontWeight: 'bold',
+              fontSize: '0.9em'
+            }}>
+              {creator.isLive ? ' LIVE' : 'OFFLINE'}
+            </div>
+          </div>
         </div>
       ))}
 

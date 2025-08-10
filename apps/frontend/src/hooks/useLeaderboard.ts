@@ -8,9 +8,10 @@ export type LeaderboardRow = {
 
 type Options = { limit?: number; intervalMs?: number };
 
-export function useLeaderboard(creatorId: string, opts: Options = {}) {
+export function useLeaderboard(creatorId: string, opts: Options & { sessionId?: string } = {}) {
   const limit = opts.limit ?? 3;
   const intervalMs = opts.intervalMs ?? 5000;
+  const sessionId = opts.sessionId;
   const [entries, setEntries] = useState<LeaderboardRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -24,7 +25,11 @@ export function useLeaderboard(creatorId: string, opts: Options = {}) {
     async function tick() {
       try {
         setError(null);
-        const res = await fetch(`${API_BASE}/leaderboard/${creatorId}?limit=${limit}`, {
+        const url = sessionId 
+          ? `${API_BASE}/leaderboard/${creatorId}/session/${sessionId}?limit=${limit}`
+          : `${API_BASE}/leaderboard/${creatorId}?limit=${limit}`;
+          
+        const res = await fetch(url, {
           signal: abort.signal,
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -45,7 +50,7 @@ export function useLeaderboard(creatorId: string, opts: Options = {}) {
       abort.abort();
       if (timerRef.current) window.clearInterval(timerRef.current);
     };
-  }, [API_BASE, creatorId, limit, intervalMs]);
+  }, [API_BASE, creatorId, limit, intervalMs, sessionId]);
 
   return { entries, loading, error };
 }
