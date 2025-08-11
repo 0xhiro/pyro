@@ -26,15 +26,17 @@ export function useLeaderboard(creatorId: string, opts: Options & { sessionId?: 
       try {
         setError(null);
         const url = sessionId 
-          ? `${API_BASE}/leaderboard/${creatorId}/session/${sessionId}?limit=${limit}`
-          : `${API_BASE}/leaderboard/${creatorId}?limit=${limit}`;
+          ? `${API_BASE}/leaderboard/${creatorId}?limit=${limit}&sessionId=${sessionId}&useBlockchain=true`
+          : `${API_BASE}/leaderboard/${creatorId}?limit=${limit}&useBlockchain=true`;
           
         const res = await fetch(url, {
           signal: abort.signal,
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
-        setEntries(Array.isArray(data) ? data : []);
+        // Backend returns { leaderboard: [...], session: {...}, creatorMint: "..." }
+        const leaderboardData = data.leaderboard || [];
+        setEntries(Array.isArray(leaderboardData) ? leaderboardData : []);
       } catch (e: any) {
         if (e.name !== 'AbortError') setError(e.message ?? 'Fetch failed');
       } finally {

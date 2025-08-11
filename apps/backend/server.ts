@@ -21,8 +21,11 @@ connectToDatabase()
 app.use(routes);
 
 // Health
-app.get('/ping', (_req, res) => res.send('pong'));
+app.get('/ping', (_req, res) => {
+  console.log('PING ROUTE HIT!');
+  res.send('pong');
+});
 
 app.listen(PORT, () => {
-  console.log(`🚀 Backend running on http://localhost:${PORT}`);
+  console.log(` Backend running on http://localhost:${PORT}`);
 });

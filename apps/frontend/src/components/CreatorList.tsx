@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { PublicKey } from '@solana/web3.js';
 import { TokenListProvider } from '@solana/spl-token-registry';
+import DevToggleLive from './DevToggleLive';
 
 const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:3001';
 
@@ -96,12 +97,20 @@ export default function CreatorList({ onSelect }: Props) {
               <br />
               <small style={{ fontFamily: 'monospace' }}>{creator.mint}</small>
             </div>
-            <div style={{ 
-              color: creator.isLive ? '#059669' : '#6b7280',
-              fontWeight: 'bold',
-              fontSize: '0.9em'
-            }}>
-              {creator.isLive ? ' LIVE' : 'OFFLINE'}
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <div style={{ 
+                color: creator.isLive ? '#059669' : '#6b7280',
+                fontWeight: 'bold',
+                fontSize: '0.9em',
+                marginRight: '0.5rem'
+              }}>
+                {creator.isLive ? ' LIVE' : 'OFFLINE'}
+              </div>
+              <DevToggleLive 
+                creatorMint={creator.mint}
+                creatorName={creator.name}
+                isCurrentlyLive={creator.isLive || false}
+              />
             </div>
           </div>
         </div>

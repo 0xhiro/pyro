@@ -26,7 +26,8 @@ if (!window.Buffer) {
   window.Buffer = Buffer;
 }
 
-const endpoint = process.env.REACT_APP_RPC_ENDPOINT
+
+const endpoint = process.env.REACT_APP_SOLANA_RPC_URL
   || 'https://api.mainnet-beta.solana.com';
 const wallets = [new PhantomWalletAdapter()];
 

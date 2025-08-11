@@ -2,8 +2,10 @@ import React, { useEffect, useState } from 'react';
 import CreatorList, { Creator } from './components/CreatorList';
 import Leaderboard from './components/Leaderboard';
 import BurnPanel from './components/BurnPanel';
-import TestBurnPanel from './components/TestBurnPanel';
 import SessionManager from './components/SessionManager';
+import DevMintButton from './components/DevMintButton';
+import DevAddCreator from './components/DevAddCreator';
+import DevBurnButton from './components/DevBurnButton';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { getTokenBalance } from './utils/getTokenBalance';
@@ -33,6 +35,7 @@ function App() {
     ? `${window.location.origin}/overlay?creatorMint=${encodeURIComponent(selectedCreator.mint)}`
     : '';
 
+
   return (
     <div>
       <h1>Pyro Demo</h1>
@@ -47,6 +50,20 @@ function App() {
         </div>
       )}
 
+      <DevMintButton 
+        onTokenMinted={(mintAddress, amount) => {
+          console.log(`Minted ${amount} tokens at ${mintAddress}`);
+        }}
+      />
+      
+      <DevAddCreator 
+        onCreatorAdded={(mintAddress) => {
+          console.log(`Creator added with mint: ${mintAddress}`);
+          // Refresh the creator list
+          window.location.reload();
+        }}
+      />
+      
       <CreatorList onSelect={setSelectedCreator} />
 
       {selectedCreator && (
@@ -58,7 +75,7 @@ function App() {
             backgroundColor: '#f0f9ff',
             borderRadius: '8px'
           }}>
-            <h2>🎯 Selected Creator: {selectedCreator.name}</h2>
+            <h2>Selected Creator: {selectedCreator.name}</h2>
             <div style={{ fontFamily: 'monospace', fontSize: '0.9em', marginBottom: '0.5rem' }}>
               {selectedCreator.mint}
             </div>
@@ -106,10 +123,11 @@ function App() {
               />
             </div>
             <div style={{ flex: '1', minWidth: '300px' }}>
-              <TestBurnPanel 
+              <DevBurnButton 
                 creatorMint={selectedCreator.mint} 
                 sessionId={session?._id}
               />
+
               <BurnPanel 
                 creatorMint={selectedCreator.mint} 
                 sessionId={session?._id}
