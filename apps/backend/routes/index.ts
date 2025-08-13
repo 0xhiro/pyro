@@ -4,7 +4,7 @@ import sessionsRoute from './sessions/index.js';
 import burnsRoute from './burns/index.js';
 import leaderboardRoute from './leaderboard/index.js';
 // import debugRoute from './debug/index.js';
-import { usersRoute } from './users';
+import { usersRoute } from './users/index.js';
 
 const router = Router();
 
