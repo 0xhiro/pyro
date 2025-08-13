@@ -1,7 +1,7 @@
-export { CreatorService } from './CreatorService';
-export { SessionService } from './SessionService';
-export { BurnService } from './BurnService';
-export { LeaderboardService } from './LeaderboardService';
-export { SolanaService } from './SolanaService';
-export { BlockchainLeaderboardService } from './BlockchainLeaderboardService';
-export { UserService } from './UserService';
+export { CreatorService } from './CreatorService.js';
+export { SessionService } from './SessionService.js';
+export { BurnService } from './BurnService.js';
+export { LeaderboardService } from './LeaderboardService.js';
+export { SolanaService } from './SolanaService.js';
+export { BlockchainLeaderboardService } from './BlockchainLeaderboardService.js';
+export { UserService } from './UserService.js';
