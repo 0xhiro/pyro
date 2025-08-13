@@ -1,5 +1,5 @@
 import { ObjectId } from 'mongodb';
-import { connectToDatabase } from '../lib/mongo';
+import { connectToDatabase } from '../lib/mongo.js';
 import { BurnDoc, SessionDoc, CreatorDoc, AdvertisingMetadata } from '../types/index.js';
 
 interface LeaderboardEntry {

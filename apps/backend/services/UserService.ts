@@ -1,5 +1,5 @@
 import { ObjectId } from 'mongodb';
-import { connectToDatabase } from '../lib/mongo';
+import { connectToDatabase } from '../lib/mongo.js';
 import { UserDoc, UserTokenDoc, UserFollowDoc, UserBurnStatsDoc } from '../types/index.js';
 
 export class UserService {

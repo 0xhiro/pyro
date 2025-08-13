@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { UserService } from '../../services/UserService';
-import { validateUserUpdate, validateTokenUpdate } from '../../middleware/validation';
+import { UserService } from '../../services/UserService.js';
+import { validateUserUpdate, validateTokenUpdate } from '../../middleware/validation.js';
 
 const router = Router();
 
