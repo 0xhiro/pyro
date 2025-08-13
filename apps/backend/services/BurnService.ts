@@ -75,10 +75,10 @@ export class BurnService {
       wallet: burnData.wallet,
       amount: burnData.amount,
       protocolFee,
-      sessionId: validSessionId,
+      sessionId: validSessionId || undefined,
       ts: new Date(),
       advertisingMetadata: burnData.advertisingMetadata,
-      userId: validUserId,
+      userId: validUserId || undefined,
       promotedTokenMint: burnData.promotedTokenMint,
     };
 
