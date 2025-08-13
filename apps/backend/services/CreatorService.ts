@@ -1,5 +1,5 @@
 import { ObjectId } from 'mongodb';
-import { connectToDatabase } from '../lib/mongo';
+import { connectToDatabase } from '../lib/mongo.js';
 import { CreatorDoc } from '../types/index.js';
 
 export class CreatorService {
