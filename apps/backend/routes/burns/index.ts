@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import postRoutes from './post';
+import postRoutes from './post.js';
 
 const router = Router();
 

@@ -1,7 +1,7 @@
 import { ObjectId } from 'mongodb';
-import { connectToDatabase } from '../lib/mongo';
-import { SessionDoc, CreatorDoc, AdvertisingMetadata } from '../types';
-import { SolanaService } from './SolanaService';
+import { connectToDatabase } from '../lib/mongo.js';
+import { SessionDoc, CreatorDoc, AdvertisingMetadata } from '../types/index.js';
+import { SolanaService } from './SolanaService.js';
 
 interface LeaderboardEntry {
   rank: number;

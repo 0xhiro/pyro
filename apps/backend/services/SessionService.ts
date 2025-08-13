@@ -1,7 +1,7 @@
 import { ObjectId } from 'mongodb';
-import { connectToDatabase } from '../lib/mongo';
-import { SessionDoc } from '../types';
-import { CreatorService } from './CreatorService';
+import { connectToDatabase } from '../lib/mongo.js';
+import { SessionDoc } from '../types/index.js';
+import { CreatorService } from './CreatorService.js';
 
 export class SessionService {
   private static async getCollection() {

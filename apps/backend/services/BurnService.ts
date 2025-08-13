@@ -1,9 +1,9 @@
 import { ObjectId } from 'mongodb';
-import { connectToDatabase } from '../lib/mongo';
-import { BurnDoc, AdvertisingMetadata } from '../types';
-import { SessionService } from './SessionService';
-import { CreatorService } from './CreatorService';
-import { UserService } from './UserService';
+import { connectToDatabase } from '../lib/mongo.js';
+import { BurnDoc, AdvertisingMetadata } from '../types/index.js';
+import { SessionService } from './SessionService.js';
+import { CreatorService } from './CreatorService.js';
+import { UserService } from './UserService.js';
 
 export class BurnService {
   private static readonly PROTOCOL_FEE_PERCENT = Number(process.env.PROTOCOL_FEE_PERCENT) || 2;
