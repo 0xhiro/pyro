@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { LeaderboardService, BlockchainLeaderboardService } from '../../services';
+import { LeaderboardService, BlockchainLeaderboardService } from '../../services/index.js';
 
 const router = Router();
 

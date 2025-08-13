@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { SessionService } from '../../services';
+import { SessionService } from '../../services/index.js';
 
 const router = Router();
 
@@ -15,7 +15,7 @@ router.get('/:creatorMint/active', async (req, res) => {
     }
 
     res.status(200).json(activeSession);
-  } catch (err) {
+  } catch (err) { 
     console.error('Error fetching active session:', err);
     res.status(500).json({ error: 'Failed to fetch active session' });
   }

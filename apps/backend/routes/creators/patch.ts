@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { CreatorService } from '../../services';
-import { validateCreatorUpdateBody } from '../../middleware/validation';
+import { CreatorService } from '../../services/index.js';
+import { validateCreatorUpdateBody } from '../../middleware/validation.js';
 
 const router = Router();
 

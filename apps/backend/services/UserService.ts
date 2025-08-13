@@ -1,6 +1,6 @@
 import { ObjectId } from 'mongodb';
 import { connectToDatabase } from '../lib/mongo';
-import { UserDoc, UserTokenDoc, UserFollowDoc, UserBurnStatsDoc } from '../types';
+import { UserDoc, UserTokenDoc, UserFollowDoc, UserBurnStatsDoc } from '../types/index.js';
 
 export class UserService {
   private static async getCollection() {

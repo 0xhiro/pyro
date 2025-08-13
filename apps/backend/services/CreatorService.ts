@@ -1,6 +1,6 @@
 import { ObjectId } from 'mongodb';
 import { connectToDatabase } from '../lib/mongo';
-import { CreatorDoc } from '../types';
+import { CreatorDoc } from '../types/index.js';
 
 export class CreatorService {
   private static async getCollection() {
@@ -12,7 +12,7 @@ export class CreatorService {
     const creators = await this.getCollection();
     return creators.find({}).toArray();
   }
-
+  
   static async getCreatorById(mint: string): Promise<CreatorDoc | null> {
     const creators = await this.getCollection();
     return creators.findOne({ _id: mint });

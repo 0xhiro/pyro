@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { CreatorService } from '../../services';
+import { CreatorService } from '../../services/index.js';
 
 const router = Router();
 

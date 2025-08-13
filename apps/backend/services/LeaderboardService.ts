@@ -1,6 +1,6 @@
 import { ObjectId } from 'mongodb';
 import { connectToDatabase } from '../lib/mongo';
-import { BurnDoc, SessionDoc, CreatorDoc, AdvertisingMetadata } from '../types';
+import { BurnDoc, SessionDoc, CreatorDoc, AdvertisingMetadata } from '../types/index.js';
 
 interface LeaderboardEntry {
   rank: number;

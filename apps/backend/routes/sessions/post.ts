@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { SessionService } from '../../services';
-import { validateSessionStart, validateObjectId } from '../../middleware/validation';
+import { SessionService } from '../../services/index.js';
+import { validateSessionStart, validateObjectId } from '../../middleware/validation.js';
 
 const router = Router();
 

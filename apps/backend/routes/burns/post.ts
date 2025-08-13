@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { BurnService } from '../../services';
-import { validateBurnBody } from '../../middleware/validation';
+import { BurnService } from '../../services/index.js';
+import { validateBurnBody } from '../../middleware/validation.js';
 
 const router = Router();
 
