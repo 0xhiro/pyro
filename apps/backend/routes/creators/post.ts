@@ -4,9 +4,9 @@ import { validateCreatorBody } from '../../middleware/validation';
 
 const router = Router();
 
-// POST /creators  body: { mint, name, iconUrl?, decimals?, symbol? }
+// POST /creators  body: { mint, name, iconUrl?, decimals?, symbol?, streamerUsername?, streamUrl?, ticker?, marketCap?, dexUrl? }
 router.post('/', validateCreatorBody, async (req, res) => {
-  const { mint, name, iconUrl, decimals, symbol } = req.body;
+  const { mint, name, iconUrl, decimals, symbol, streamerUsername, streamUrl, ticker, marketCap, dexUrl } = req.body;
 
   try {
     const creator = await CreatorService.createCreator({
@@ -14,7 +14,12 @@ router.post('/', validateCreatorBody, async (req, res) => {
       name,
       iconUrl,
       decimals,
-      symbol
+      symbol,
+      streamerUsername,
+      streamUrl,
+      ticker,
+      marketCap,
+      dexUrl
     });
     
     res.status(201).json(creator);

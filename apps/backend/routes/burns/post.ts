@@ -5,14 +5,15 @@ import { validateBurnBody } from '../../middleware/validation';
 const router = Router();
 
 router.post('/', validateBurnBody, async (req, res) => {
-  const { creatorMint, wallet, amount, sessionId } = req.body;
+  const { creatorMint, wallet, amount, sessionId, advertisingMetadata } = req.body;
 
   try {
     const result = await BurnService.createBurn({
       creatorMint,
       wallet,
       amount,
-      sessionId
+      sessionId,
+      advertisingMetadata
     });
 
     res.status(200).json({ 

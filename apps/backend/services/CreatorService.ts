@@ -24,6 +24,11 @@ export class CreatorService {
     iconUrl?: string;
     decimals?: number;
     symbol?: string;
+    streamerUsername?: string;
+    streamUrl?: string;
+    ticker?: string;
+    marketCap?: number;
+    dexUrl?: string;
   }): Promise<CreatorDoc> {
     const creators = await this.getCollection();
     
@@ -35,6 +40,12 @@ export class CreatorService {
       symbol: creatorData.symbol,
       isLive: false,
       createdAt: new Date(),
+      streamerUsername: creatorData.streamerUsername,
+      streamUrl: creatorData.streamUrl,
+      ticker: creatorData.ticker,
+      marketCap: creatorData.marketCap,
+      dexUrl: creatorData.dexUrl,
+      totalTokensBurned: 0,
     };
 
     await creators.insertOne(doc);
@@ -96,6 +107,49 @@ export class CreatorService {
         $set: { isLive: false },
         $unset: { currentSessionId: "" }
       }
+    );
+  }
+
+  static async updateCreatorInfo(mint: string, updateData: {
+    name?: string;
+    iconUrl?: string;
+    streamerUsername?: string;
+    streamUrl?: string;
+    ticker?: string;
+    marketCap?: number;
+    dexUrl?: string;
+  }): Promise<void> {
+    const creators = await this.getCollection();
+    await creators.updateOne(
+      { _id: mint },
+      { $set: updateData }
+    );
+  }
+
+  static async updateTotalTokensBurned(mint: string): Promise<void> {
+    const db = await connectToDatabase();
+    const burns = db.collection('burns');
+    const creators = await this.getCollection();
+
+    // Calculate total tokens burned for this creator
+    const result = await burns.aggregate([
+      { $match: { creatorMint: mint } },
+      { $group: { _id: null, total: { $sum: '$amount' } } }
+    ]).toArray();
+
+    const totalBurned = result.length > 0 ? result[0].total : 0;
+
+    await creators.updateOne(
+      { _id: mint },
+      { $set: { totalTokensBurned: totalBurned } }
+    );
+  }
+
+  static async incrementTotalTokensBurned(mint: string, amount: number): Promise<void> {
+    const creators = await this.getCollection();
+    await creators.updateOne(
+      { _id: mint },
+      { $inc: { totalTokensBurned: amount } }
     );
   }
 }

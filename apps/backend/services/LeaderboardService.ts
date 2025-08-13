@@ -1,11 +1,12 @@
 import { ObjectId } from 'mongodb';
 import { connectToDatabase } from '../lib/mongo';
-import { BurnDoc, SessionDoc, CreatorDoc } from '../types';
+import { BurnDoc, SessionDoc, CreatorDoc, AdvertisingMetadata } from '../types';
 
 interface LeaderboardEntry {
   rank: number;
   wallet: string;
   totalBurned: number;
+  advertisingMetadata?: AdvertisingMetadata;
 }
 
 interface LeaderboardResponse {
@@ -60,11 +61,28 @@ export class LeaderboardService {
       }
     }
 
-    // Get leaderboard data
+    // Get leaderboard data with advertising metadata from the highest burn per wallet
     const leaderboard = await burns.aggregate([
       { $match: matchCondition },
-      { $group: { _id: '$wallet', totalBurned: { $sum: '$amount' } } },
-      { $project: { wallet: '$_id', totalBurned: 1, _id: 0 } },
+      { 
+        $sort: { wallet: 1, amount: -1 } // Sort by wallet then by amount descending to get highest burn per wallet
+      },
+      {
+        $group: { 
+          _id: '$wallet', 
+          totalBurned: { $sum: '$amount' },
+          // Get the advertising metadata from the highest burn for this wallet
+          advertisingMetadata: { $first: '$advertisingMetadata' }
+        }
+      },
+      { 
+        $project: { 
+          wallet: '$_id', 
+          totalBurned: 1, 
+          advertisingMetadata: 1, 
+          _id: 0 
+        } 
+      },
       { $sort: { totalBurned: -1 } },
       { $limit: limit },
     ]).toArray();
@@ -72,7 +90,8 @@ export class LeaderboardService {
     const rankedLeaderboard = leaderboard.map((entry, index) => ({
       rank: index + 1,
       wallet: entry.wallet,
-      totalBurned: entry.totalBurned
+      totalBurned: entry.totalBurned,
+      advertisingMetadata: entry.advertisingMetadata
     }));
 
     // Format session info
