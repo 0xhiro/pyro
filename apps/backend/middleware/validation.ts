@@ -71,23 +71,41 @@ export const validateObjectId = (paramName: string) => {
 };
 
 export const validateCreatorBody = (req: Request, res: Response, next: NextFunction) => {
-  const { mint, name, marketCap } = req.body;
+  const { mint, tokenInfo } = req.body;
 
   if (!mint || typeof mint !== 'string') {
     return res.status(400).json({ error: 'mint is required and must be a string' });
   }
 
-  if (!name || typeof name !== 'string') {
-    return res.status(400).json({ error: 'name is required and must be a string' });
+  if (!tokenInfo || typeof tokenInfo !== 'object') {
+    return res.status(400).json({ error: 'tokenInfo is required and must be an object' });
   }
 
-  // Validate optional marketCap if provided
-  if (marketCap !== undefined && marketCap !== null) {
-    const numMarketCap = Number(marketCap);
-    if (!Number.isFinite(numMarketCap) || numMarketCap < 0) {
-      return res.status(400).json({ error: 'marketCap must be a non-negative number' });
-    }
-    req.body.marketCap = numMarketCap;
+  const { name, icon, ticker, mint_address } = tokenInfo;
+
+  if (!name || typeof name !== 'string') {
+    return res.status(400).json({ error: 'tokenInfo.name is required and must be a string' });
+  }
+
+  if (!icon || typeof icon !== 'string') {
+    return res.status(400).json({ error: 'tokenInfo.icon is required and must be a string' });
+  }
+
+  if (!ticker || typeof ticker !== 'string') {
+    return res.status(400).json({ error: 'tokenInfo.ticker is required and must be a string' });
+  }
+
+  if (!mint_address || typeof mint_address !== 'string') {
+    return res.status(400).json({ error: 'tokenInfo.mint_address is required and must be a string' });
+  }
+
+  // Validate optional tokenInfo fields
+  if (tokenInfo.symbol !== undefined && typeof tokenInfo.symbol !== 'string') {
+    return res.status(400).json({ error: 'tokenInfo.symbol must be a string' });
+  }
+
+  if (tokenInfo.decimals !== undefined && (typeof tokenInfo.decimals !== 'number' || tokenInfo.decimals < 0 || tokenInfo.decimals > 18)) {
+    return res.status(400).json({ error: 'tokenInfo.decimals must be a number between 0 and 18' });
   }
 
   next();
@@ -288,5 +306,123 @@ export const validateTokenUpdate = (req: Request, res: Response, next: NextFunct
     return res.status(400).json({ error: 'description must be a string with max 1000 characters' });
   }
 
+  next();
+};
+
+// Burn validation for the new burn system
+export const validateNewBurnBody = (req: Request, res: Response, next: NextFunction) => {
+  const { userId, wallet, creatorMint, amount, promotedToken, advertisingMetadata, sessionId, txSignature } = req.body;
+
+  // userId is required in new system
+  if (!userId || typeof userId !== 'string') {
+    return res.status(400).json({ error: 'userId is required and must be a string' });
+  }
+
+  // wallet is required for easy lookup
+  if (!wallet || typeof wallet !== 'string') {
+    return res.status(400).json({ error: 'wallet is required and must be a string' });
+  }
+
+  if (!creatorMint || typeof creatorMint !== 'string') {
+    return res.status(400).json({ error: 'creatorMint is required and must be a string' });
+  }
+
+  if (amount === undefined || amount === null) {
+    return res.status(400).json({ error: 'amount is required' });
+  }
+
+  const numAmount = Number(amount);
+  if (!Number.isFinite(numAmount) || numAmount <= 0) {
+    return res.status(400).json({ error: 'amount must be a positive number' });
+  }
+
+  // txSignature is required
+  if (!txSignature || typeof txSignature !== 'string') {
+    return res.status(400).json({ error: 'txSignature is required and must be a string' });
+  }
+
+
+  // Validate optional advertising metadata
+  if (advertisingMetadata !== undefined && advertisingMetadata !== null) {
+    if (typeof advertisingMetadata !== 'object') {
+      return res.status(400).json({ error: 'advertisingMetadata must be an object' });
+    }
+    
+    const { message, websiteUrl, imageUrl, contact } = advertisingMetadata;
+    
+    if (message !== undefined && typeof message !== 'string') {
+      return res.status(400).json({ error: 'advertisingMetadata.message must be a string' });
+    }
+    
+    if (websiteUrl !== undefined && typeof websiteUrl !== 'string') {
+      return res.status(400).json({ error: 'advertisingMetadata.websiteUrl must be a string' });
+    }
+    
+    if (imageUrl !== undefined && typeof imageUrl !== 'string') {
+      return res.status(400).json({ error: 'advertisingMetadata.imageUrl must be a string' });
+    }
+    
+    if (contact !== undefined && typeof contact !== 'string') {
+      return res.status(400).json({ error: 'advertisingMetadata.contact must be a string' });
+    }
+  }
+
+  // Validate optional promoted token (new full token object)
+  if (promotedToken !== undefined && promotedToken !== null) {
+    if (typeof promotedToken !== 'object') {
+      return res.status(400).json({ error: 'promotedToken must be an object' });
+    }
+
+    const { mint, name, symbol, decimals } = promotedToken;
+
+    if (!mint || typeof mint !== 'string') {
+      return res.status(400).json({ error: 'promotedToken.mint is required and must be a string' });
+    }
+
+    if (!name || typeof name !== 'string') {
+      return res.status(400).json({ error: 'promotedToken.name is required and must be a string' });
+    }
+
+    if (!symbol || typeof symbol !== 'string') {
+      return res.status(400).json({ error: 'promotedToken.symbol is required and must be a string' });
+    }
+
+    if (typeof decimals !== 'number' || decimals < 0 || decimals > 18) {
+      return res.status(400).json({ error: 'promotedToken.decimals must be a number between 0 and 18' });
+    }
+
+    // Validate optional fields
+    if (promotedToken.ticker !== undefined && typeof promotedToken.ticker !== 'string') {
+      return res.status(400).json({ error: 'promotedToken.ticker must be a string' });
+    }
+
+    if (promotedToken.iconUrl !== undefined && typeof promotedToken.iconUrl !== 'string') {
+      return res.status(400).json({ error: 'promotedToken.iconUrl must be a string' });
+    }
+
+    if (promotedToken.marketCap !== undefined && (typeof promotedToken.marketCap !== 'number' || promotedToken.marketCap < 0)) {
+      return res.status(400).json({ error: 'promotedToken.marketCap must be a non-negative number' });
+    }
+
+    if (promotedToken.dexUrl !== undefined && typeof promotedToken.dexUrl !== 'string') {
+      return res.status(400).json({ error: 'promotedToken.dexUrl must be a string' });
+    }
+
+    if (promotedToken.websiteUrl !== undefined && typeof promotedToken.websiteUrl !== 'string') {
+      return res.status(400).json({ error: 'promotedToken.websiteUrl must be a string' });
+    }
+
+    if (promotedToken.description !== undefined && (typeof promotedToken.description !== 'string' || promotedToken.description.length > 1000)) {
+      return res.status(400).json({ error: 'promotedToken.description must be a string with max 1000 characters' });
+    }
+  }
+
+  // Validate optional fields
+  if (sessionId !== undefined && sessionId !== null && typeof sessionId !== 'string') {
+    return res.status(400).json({ error: 'sessionId must be a string' });
+  }
+
+  // Add parsed amount to request
+  req.body.amount = numAmount;
   next();
 };

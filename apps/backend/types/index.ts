@@ -1,20 +1,23 @@
 import { ObjectId } from 'mongodb';
 
+export interface TokenInfo {
+  name: string;
+  icon: string;
+  ticker: string;
+  symbol?: string;
+  decimals?: number;
+  mint_address: string;
+}
+
 export interface CreatorDoc {
   _id: string;            // mint as string
-  name: string;
-  iconUrl?: string;
-  decimals?: number;
-  symbol?: string;
+  tokenInfo: TokenInfo;   // embedded token object
+  streamerUsername?: string;
+  streamUrl?: string;
+  dexUrl?: string;
   isLive?: boolean;
   currentSessionId?: ObjectId;
   createdAt: Date;
-  // Enhanced streamer fields
-  streamerUsername?: string;
-  streamUrl?: string;
-  ticker?: string;
-  marketCap?: number;
-  dexUrl?: string;
   totalTokensBurned?: number;
 }
 
@@ -35,19 +38,37 @@ export interface AdvertisingMetadata {
   contact?: string;
 }
 
+// Token information for promoted tokens (full token object)
+export interface TokenDoc {
+  _id?: ObjectId;
+  mint: string;                       // Token mint address
+  name: string;
+  symbol: string;
+  ticker?: string;
+  iconUrl?: string;
+  decimals: number;
+  marketCap?: number;
+  dexUrl?: string;
+  websiteUrl?: string;
+  description?: string;
+  addedAt?: Date;                     // When token was added to system
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+// Individual burn record - each burn transaction gets its own record
 export interface BurnDoc {
   _id?: ObjectId;
-  creatorMint: string;
-  wallet: string;
-  amount: number;
-  protocolFee: number;
-  sessionId?: ObjectId;
-  ts: Date;
-  // Advertising metadata for leaderboard winners
-  advertisingMetadata?: AdvertisingMetadata;
-  // User promotion when burning
-  userId?: ObjectId;
-  promotedTokenMint?: string;
+  userId: ObjectId;                    // User performing the burn
+  wallet: string;                      // Wallet address of the burner (for easy lookup)
+  creatorMint: string;                 // Creator they are burning for
+  promotedToken?: TokenDoc;            // Full token object they are trying to promote (optional)
+  amount: number;                      // Amount of tokens burnt
+  protocolFee: number;                // Protocol fee (calculated automatically)
+  sessionId?: ObjectId;               // Session ID if applicable
+  advertisingMetadata?: AdvertisingMetadata; // Optional advertising message
+  burnedAt: Date;                     // Timestamp of burn
+  txSignature: string;                // Solana transaction signature (required)
 }
 
 // User-related interfaces
@@ -66,6 +87,47 @@ export interface UserTokenDoc {
   addedAt: Date;
 }
 
+// Reference to a burn - stored in user's burns array
+export interface UserBurnRef {
+  burnId: ObjectId;                   // Reference to BurnDoc
+  creatorMint: string;                // Creator they burned for
+  amount: number;                     // Amount burnt
+  burnedAt: Date;                     // When the burn happened
+}
+
+// Creator contribution to a community (token promotion)
+export interface CreatorContribution {
+  creatorMint: string;                // Creator who helped promote
+  creatorName: string;                // Creator's name for easy display
+  creatorSymbol: string;              // Creator's token symbol
+  totalBurned: number;                // Total amount burned on their stream
+  burnCount: number;                  // Number of burns on their stream
+  lastBurnAt: Date;                   // Most recent burn
+}
+
+// User contribution to a community (token promotion)
+export interface UserContribution {
+  userId: ObjectId;                   // User who burned
+  wallet: string;                     // User's wallet address
+  totalBurned: number;                // Total amount they burned
+  burnCount: number;                  // Number of burns they made
+  lastBurnAt: Date;                   // Most recent burn
+}
+
+// Community document - tracks token promotion across all creators
+export interface CommunityDoc {
+  _id?: string;                       // Uses token mint address as ID
+  name: string;                       // Token name for easy reference
+  token: TokenDoc;                    // The token being promoted
+  totalAmountBurned: number;          // Total amount burned to promote this token
+  totalBurnCount: number;             // Total number of burns for this token
+  creatorContributions: CreatorContribution[];  // Creators who helped promote
+  userContributions: UserContribution[];        // Users who burned to promote
+  createdAt: Date;
+  updatedAt: Date;
+  isActive: boolean;
+}
+
 export interface UserDoc {
   _id?: ObjectId;
   wallet: string;
@@ -80,6 +142,9 @@ export interface UserDoc {
   
   // User tokens for promotion
   tokens: UserTokenDoc[];
+  
+  // Burns performed by user
+  burns: UserBurnRef[];
   
   // Social features
   following: ObjectId[];

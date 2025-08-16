@@ -5,3 +5,5 @@ export { LeaderboardService } from './LeaderboardService.js';
 export { SolanaService } from './SolanaService.js';
 export { BlockchainLeaderboardService } from './BlockchainLeaderboardService.js';
 export { UserService } from './UserService.js';
+export { TokenService } from './TokenService.js';
+export { CommunityService } from './CommunityService.js';

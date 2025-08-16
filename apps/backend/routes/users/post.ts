@@ -148,4 +148,40 @@ router.post('/:id/is-following/:targetId', async (req, res) => {
   }
 });
 
+// POST /users/:id/tokens-burnt - Add burnt token to user's record
+router.post('/:id/tokens-burnt', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { token, amount } = req.body;
+    
+    if (!token || !amount || amount <= 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'token and positive amount are required'
+      });
+    }
+    
+    await UserService.addTokenBurnt(id, token, amount);
+    
+    res.status(201).json({
+      success: true,
+      message: 'Token burnt record added successfully'
+    });
+  } catch (error: any) {
+    console.error('Error adding token burnt:', error);
+    
+    if (error.message.includes('Invalid user ID')) {
+      return res.status(400).json({
+        success: false,
+        error: error.message
+      });
+    }
+    
+    res.status(500).json({
+      success: false,
+      error: 'Failed to add token burnt record'
+    });
+  }
+});
+
 export { router as postRoutes };

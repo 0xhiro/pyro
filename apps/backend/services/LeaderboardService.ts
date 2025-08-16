@@ -1,12 +1,18 @@
 import { ObjectId } from 'mongodb';
 import { connectToDatabase } from '../lib/mongo.js';
 import { BurnDoc, SessionDoc, CreatorDoc, AdvertisingMetadata } from '../types/index.js';
+import { BurnService } from './BurnService.js';
 
 interface LeaderboardEntry {
   rank: number;
   wallet: string;
+  userId?: string;
+  user?: any;
   totalBurned: number;
+  burnCount?: number;
+  lastBurnAt?: Date;
   advertisingMetadata?: AdvertisingMetadata;
+  tokenSymbol?: string;
 }
 
 interface LeaderboardResponse {
@@ -29,31 +35,87 @@ export class LeaderboardService {
   ): Promise<LeaderboardResponse> {
     const { limit = 10, sessionId } = options;
     
+    // Use the new BurnService to get the leaderboard
+    const leaderboardEntries = await BurnService.getCreatorLeaderboard(creatorMint);
+    
+    // Apply limit if specified
+    const limitedEntries = limit ? leaderboardEntries.slice(0, limit) : leaderboardEntries;
+    
+    // Convert to the expected format
+    const rankedLeaderboard: LeaderboardEntry[] = limitedEntries.map(entry => ({
+      rank: entry.rank,
+      wallet: entry.wallet,
+      userId: entry.userId?.toString(),
+      user: entry.user,
+      totalBurned: entry.totalBurned,
+      burnCount: entry.burnCount,
+      lastBurnAt: entry.lastBurnAt,
+      advertisingMetadata: entry.advertisingMetadata,
+      tokenSymbol: entry.tokenSymbol
+    }));
+
+    // Get session info if sessionId is provided
+    let sessionInfo = null;
+    if (sessionId) {
+      const db = await connectToDatabase();
+      const sessions = db.collection<SessionDoc>('sessions');
+      
+      if (!ObjectId.isValid(sessionId)) {
+        throw new Error('Invalid sessionId format');
+      }
+
+      const sessionObjectId = new ObjectId(sessionId);
+      sessionInfo = await sessions.findOne({ _id: sessionObjectId });
+      if (!sessionInfo) {
+        throw new Error('Session not found');
+      }
+    }
+
+    // Format session info
+    const formattedSession = sessionInfo ? {
+      id: sessionInfo._id.toString(),
+      startTime: sessionInfo.startTime.toISOString(),
+      endTime: sessionInfo.endTime?.toISOString(),
+      isActive: sessionInfo.isActive,
+      totalBurns: sessionInfo.totalBurns,
+      participantCount: sessionInfo.participantCount
+    } : null;
+
+    return {
+      leaderboard: rankedLeaderboard,
+      session: formattedSession,
+      creatorMint
+    };
+  }
+
+  // Legacy method for backwards compatibility
+  static async getLegacyLeaderboard(
+    creatorMint: string, 
+    options: { limit?: number; sessionId?: string } = {}
+  ): Promise<LeaderboardResponse> {
+    const { limit = 10, sessionId } = options;
+    
     const db = await connectToDatabase();
     const burns = db.collection<BurnDoc>('burns');
     const sessions = db.collection<SessionDoc>('sessions');
     const creators = db.collection<CreatorDoc>('creators');
 
-    // Build match condition
+    // Build match condition - for legacy compatibility, aggregate by wallet instead of userId
     const matchCondition: any = { creatorMint };
     let sessionInfo = null;
     
     if (sessionId) {
-      // Validate sessionId format
       if (!ObjectId.isValid(sessionId)) {
         throw new Error('Invalid sessionId format');
       }
 
       const sessionObjectId = new ObjectId(sessionId);
       matchCondition.sessionId = sessionObjectId;
-
-      // Get session info
       sessionInfo = await sessions.findOne({ _id: sessionObjectId });
       if (!sessionInfo) {
         throw new Error('Session not found');
       }
     } else {
-      // If no sessionId provided, try to get the current active session
       const creator = await creators.findOne({ _id: creatorMint });
       if (creator?.currentSessionId) {
         matchCondition.sessionId = creator.currentSessionId;
@@ -61,40 +123,18 @@ export class LeaderboardService {
       }
     }
 
-    // Get leaderboard data with advertising metadata from the highest burn per wallet
-    const leaderboard = await burns.aggregate([
-      { $match: matchCondition },
-      { 
-        $sort: { wallet: 1, amount: -1 } // Sort by wallet then by amount descending to get highest burn per wallet
-      },
-      {
-        $group: { 
-          _id: '$wallet', 
-          totalBurned: { $sum: '$amount' },
-          // Get the advertising metadata from the highest burn for this wallet
-          advertisingMetadata: { $first: '$advertisingMetadata' }
-        }
-      },
-      { 
-        $project: { 
-          wallet: '$_id', 
-          totalBurned: 1, 
-          advertisingMetadata: 1, 
-          _id: 0 
-        } 
-      },
-      { $sort: { totalBurned: -1 } },
-      { $limit: limit },
-    ]).toArray();
-
-    const rankedLeaderboard = leaderboard.map((entry, index) => ({
+    // Get legacy format leaderboard
+    const legacyEntries = await BurnService.getLegacyLeaderboard(creatorMint, sessionId);
+    
+    const rankedLeaderboard = legacyEntries.slice(0, limit).map((entry, index) => ({
       rank: index + 1,
       wallet: entry.wallet,
+      userId: entry.userId,
+      user: entry.user,
       totalBurned: entry.totalBurned,
       advertisingMetadata: entry.advertisingMetadata
     }));
 
-    // Format session info
     const formattedSession = sessionInfo ? {
       id: sessionInfo._id.toString(),
       startTime: sessionInfo.startTime.toISOString(),

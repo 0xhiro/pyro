@@ -1,6 +1,6 @@
 import { ObjectId } from 'mongodb';
 import { connectToDatabase } from '../lib/mongo.js';
-import { CreatorDoc } from '../types/index.js';
+import { CreatorDoc, TokenInfo } from '../types/index.js';
 
 export class CreatorService {
   private static async getCollection() {
@@ -18,32 +18,26 @@ export class CreatorService {
     return creators.findOne({ _id: mint });
   }
 
+  static async getCreatorByMint(mint: string): Promise<CreatorDoc | null> {
+    return this.getCreatorById(mint);
+  }
+
   static async createCreator(creatorData: {
     mint: string;
-    name: string;
-    iconUrl?: string;
-    decimals?: number;
-    symbol?: string;
+    tokenInfo: TokenInfo;
     streamerUsername?: string;
     streamUrl?: string;
-    ticker?: string;
-    marketCap?: number;
     dexUrl?: string;
   }): Promise<CreatorDoc> {
     const creators = await this.getCollection();
     
     const doc: CreatorDoc = {
       _id: creatorData.mint,
-      name: creatorData.name,
-      iconUrl: creatorData.iconUrl,
-      decimals: creatorData.decimals,
-      symbol: creatorData.symbol,
+      tokenInfo: creatorData.tokenInfo,
       isLive: false,
       createdAt: new Date(),
       streamerUsername: creatorData.streamerUsername,
       streamUrl: creatorData.streamUrl,
-      ticker: creatorData.ticker,
-      marketCap: creatorData.marketCap,
       dexUrl: creatorData.dexUrl,
       totalTokensBurned: 0,
     };
@@ -111,12 +105,8 @@ export class CreatorService {
   }
 
   static async updateCreatorInfo(mint: string, updateData: {
-    name?: string;
-    iconUrl?: string;
     streamerUsername?: string;
     streamUrl?: string;
-    ticker?: string;
-    marketCap?: number;
     dexUrl?: string;
   }): Promise<void> {
     const creators = await this.getCollection();
@@ -151,5 +141,31 @@ export class CreatorService {
       { _id: mint },
       { $inc: { totalTokensBurned: amount } }
     );
+  }
+
+  static async updateTokenInfo(mint: string, tokenInfo: Partial<TokenInfo>): Promise<void> {
+    const creators = await this.getCollection();
+    
+    const updateFields: any = {};
+    Object.keys(tokenInfo).forEach(key => {
+      updateFields[`tokenInfo.${key}`] = (tokenInfo as any)[key];
+    });
+
+    await creators.updateOne(
+      { _id: mint },
+      { $set: updateFields }
+    );
+  }
+
+  static async getCreatorsByTokenName(tokenName: string): Promise<CreatorDoc[]> {
+    const creators = await this.getCollection();
+    return creators.find({ 
+      'tokenInfo.name': { $regex: tokenName, $options: 'i' }
+    }).toArray();
+  }
+
+  static async getCreatorsByTicker(ticker: string): Promise<CreatorDoc[]> {
+    const creators = await this.getCollection();
+    return creators.find({ 'tokenInfo.ticker': ticker }).toArray();
   }
 }

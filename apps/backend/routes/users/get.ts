@@ -340,14 +340,24 @@ router.get('/wallet/:wallet/creator-burns', async (req, res) => {
       limit
     });
     
+    // Ensure the response has the expected structure
+    if (!creatorTokensBurned || !creatorTokensBurned.data || !creatorTokensBurned.pagination) {
+      return res.json({
+        success: true,
+        data: [],
+        pagination: { page, limit, total: 0, hasMore: false },
+        summary: { totalCreators: 0, totalBurned: 0, totalBurns: 0 }
+      });
+    }
+
     res.json({
       success: true,
       data: creatorTokensBurned.data,
       pagination: creatorTokensBurned.pagination,
       summary: {
-        totalCreators: creatorTokensBurned.pagination.total,
-        totalBurned: creatorTokensBurned.data.reduce((sum, item) => sum + item.totalBurned, 0),
-        totalBurns: creatorTokensBurned.data.reduce((sum, item) => sum + item.burnCount, 0)
+        totalCreators: creatorTokensBurned.pagination.total || 0,
+        totalBurned: creatorTokensBurned.data.reduce((sum, item) => sum + (item.totalBurned || 0), 0),
+        totalBurns: creatorTokensBurned.data.reduce((sum, item) => sum + (item.burnCount || 0), 0)
       }
     });
   } catch (error) {
@@ -355,6 +365,29 @@ router.get('/wallet/:wallet/creator-burns', async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to fetch wallet creator burns'
+    });
+  }
+});
+
+// GET /users/:id/tokens-burnt - Get user's burnt tokens record
+router.get('/:id/tokens-burnt', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const tokensBurnt = await UserService.getUserTokensBurnt(id);
+    
+    res.json({
+      success: true,
+      data: tokensBurnt,
+      summary: {
+        totalTokenTypes: tokensBurnt.length,
+        totalAmountBurnt: tokensBurnt.reduce((sum, item) => sum + item.amount, 0)
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching user tokens burnt:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch user tokens burnt'
     });
   }
 });

@@ -1,6 +1,7 @@
 import { ObjectId } from 'mongodb';
 import { connectToDatabase } from '../lib/mongo.js';
-import { UserDoc, UserTokenDoc, UserFollowDoc, UserBurnStatsDoc } from '../types/index.js';
+import { UserDoc, UserTokenDoc, UserFollowDoc, UserBurnStatsDoc, UserBurnRef } from '../types/index.js';
+import { BurnService } from './BurnService.js';
 
 export class UserService {
   private static async getCollection() {
@@ -57,6 +58,7 @@ export class UserService {
       telegramHandle: userData.telegramHandle,
       discordHandle: userData.discordHandle,
       tokens: [],
+      burns: [],
       following: [],
       followers: [],
       totalTokensBurned: 0,
@@ -552,8 +554,8 @@ export class UserService {
           _id: '$creatorMint',
           totalBurned: { $sum: '$amount' },
           burnCount: { $sum: 1 },
-          firstBurnAt: { $min: '$ts' },
-          lastBurnAt: { $max: '$ts' }
+          firstBurnAt: { $min: '$burnedAt' },
+          lastBurnAt: { $max: '$burnedAt' }
         }
       },
       {
@@ -581,11 +583,11 @@ export class UserService {
     const creatorMap = new Map();
     creatorsInfo.forEach(creator => {
       creatorMap.set(creator._id, {
-        name: creator.name,
-        symbol: creator.symbol,
-        iconUrl: creator.iconUrl,
-        ticker: creator.ticker,
-        decimals: creator.decimals
+        name: creator.tokenInfo?.name || creator.name,
+        symbol: creator.tokenInfo?.symbol || creator.symbol,
+        iconUrl: creator.tokenInfo?.icon || creator.iconUrl,
+        ticker: creator.tokenInfo?.ticker || creator.ticker,
+        decimals: creator.tokenInfo?.decimals || creator.decimals
       });
     });
 
@@ -674,14 +676,14 @@ export class UserService {
           _id: '$creatorMint',
           totalBurned: { $sum: '$amount' },
           burnCount: { $sum: 1 },
-          firstBurnAt: { $min: '$ts' },
-          lastBurnAt: { $max: '$ts' },
+          firstBurnAt: { $min: '$burnedAt' },
+          lastBurnAt: { $max: '$burnedAt' },
           burns: {
             $push: {
               amount: '$amount',
-              timestamp: '$ts',
+              timestamp: '$burnedAt',
               sessionId: '$sessionId',
-              promotedTokenMint: '$promotedTokenMint'
+              promotedTokenMint: '$promotedToken.mint'
             }
           }
         }
@@ -716,11 +718,11 @@ export class UserService {
     const creatorMap = new Map();
     creatorsInfo.forEach(creator => {
       creatorMap.set(creator._id, {
-        name: creator.name,
-        symbol: creator.symbol,
-        iconUrl: creator.iconUrl,
-        ticker: creator.ticker,
-        decimals: creator.decimals,
+        name: creator.tokenInfo?.name || creator.name,
+        symbol: creator.tokenInfo?.symbol || creator.symbol,
+        iconUrl: creator.tokenInfo?.icon || creator.iconUrl,
+        ticker: creator.tokenInfo?.ticker || creator.ticker,
+        decimals: creator.tokenInfo?.decimals || creator.decimals,
         totalTokensBurned: creator.totalTokensBurned
       });
     });
@@ -790,107 +792,41 @@ export class UserService {
       hasMore: boolean;
     };
   }> {
-    const { creatorMint, page = 1, limit = 20 } = options;
-
-    const db = await connectToDatabase();
-    const burns = db.collection('burns');
-    const creators = db.collection('creators');
-    
-    // Build match condition
-    const matchCondition: any = { wallet };
-    if (creatorMint) {
-      matchCondition.creatorMint = creatorMint;
+    try {
+      // First try to find user by wallet
+      const user = await this.getUserByWallet(wallet);
+      if (user) {
+        // Use the user-based method if user exists
+        const userBurns = await this.getUserCreatorTokensBurned(user._id!.toString());
+        
+        // Wrap in expected format
+        return {
+          data: userBurns,
+          pagination: {
+            page: 1,
+            limit: userBurns.length,
+            total: userBurns.length,
+            hasMore: false
+          }
+        };
+      }
+    } catch (error) {
+      // User doesn't exist, continue with wallet-based approach
     }
 
-    // Get aggregated burn data for this wallet
-    const allResults = await burns.aggregate([
-      { $match: matchCondition },
-      {
-        $group: {
-          _id: '$creatorMint',
-          totalBurned: { $sum: '$amount' },
-          burnCount: { $sum: 1 },
-          firstBurnAt: { $min: '$ts' },
-          lastBurnAt: { $max: '$ts' }
-        }
-      },
-      {
-        $project: {
-          creatorMint: '$_id',
-          totalBurned: 1,
-          burnCount: 1,
-          firstBurnAt: 1,
-          lastBurnAt: 1,
-          _id: 0
-        }
-      },
-      {
-        $sort: { totalBurned: -1 }
-      }
-    ]).toArray();
+    const { creatorMint, page = 1, limit = 20 } = options;
 
-    // Filter to only include creator tokens
-    const allCreatorMints = allResults.map(result => result.creatorMint);
-    const creatorsInfo = await creators.find({
-      _id: { $in: allCreatorMints }
-    }).toArray();
-
-    const creatorMap = new Map();
-    creatorsInfo.forEach(creator => {
-      creatorMap.set(creator._id, {
-        name: creator.name,
-        symbol: creator.symbol,
-        iconUrl: creator.iconUrl,
-        ticker: creator.ticker,
-        decimals: creator.decimals,
-        totalTokensBurned: creator.totalTokensBurned
-      });
-    });
-
-    // Filter results to only include creator tokens
-    const filteredResults = allResults.filter(result => 
-      creatorMap.has(result.creatorMint)
-    );
-
-    // Apply pagination
-    const total = filteredResults.length;
-    const skip = (page - 1) * limit;
-    const paginatedResults = filteredResults.slice(skip, skip + limit);
-
-    // Format response
-    const data = paginatedResults.map(result => ({
-      creatorMint: result.creatorMint,
-      creatorInfo: creatorMap.get(result.creatorMint),
-      totalBurned: result.totalBurned,
-      burnCount: result.burnCount,
-      firstBurnAt: result.firstBurnAt,
-      lastBurnAt: result.lastBurnAt
-    }));
-
+    // Since user doesn't exist, return empty result
+    // In the new burn system, all burns require a user account
     return {
-      data,
+      data: [],
       pagination: {
         page,
         limit,
-        total,
-        hasMore: skip + limit < total
+        total: 0,
+        hasMore: false
       }
     };
   }
 
-  // Legacy method for backward compatibility
-  static async updateTotalTokensBurnt(userId: string, amount: number): Promise<void> {
-    if (!ObjectId.isValid(userId)) {
-      return;
-    }
-
-    const users = await this.getCollection();
-    await users.updateOne(
-      { _id: new ObjectId(userId) },
-      { 
-        $inc: { totalTokensBurned: amount },
-        $set: { lastActiveAt: new Date() }
-      }
-    );
-  }
 }
